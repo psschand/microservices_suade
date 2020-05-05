@@ -1,0 +1,2 @@
+CREATE DATABASE reports;
+CREATE DATABASE reports_test;

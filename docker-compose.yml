@@ -1,0 +1,70 @@
+version: '3'
+
+services:
+
+  reports:
+    build:
+      context: ./services/report
+      dockerfile: Dockerfile
+    volumes:
+      - './services/report:/usr/src/app'
+    ports:
+      - 8081:5000
+    environment:
+      - FLASK_ENV=development
+      - APP_SETTINGS=src.config.DevelopmentConfig
+      - DATABASE_URL=postgres://postgres:postgres@reports-db:5432/reports
+      - DATABASE_TEST_URL=postgres://postgres:postgres@reports-db:5432/reports_test
+      - SECRET_KEY=PB3aGvTmCkzaLGRAxDc3aMayKTPTDd5usT8gw4pCmKOk5AlJjh12pTrnNgQyOHCH
+    depends_on:
+      - reports-db
+
+  reports-db:
+    build:
+      context: ./services/report/src/db
+      dockerfile: Dockerfile
+    container_name: "reports-db"    
+    ports:
+      - 5436:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  frontend:
+    container_name: frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports: 
+      - "3000:3000"
+    volumes:
+      - /fapp/node_modules
+      - .:/fapp
+    links:
+      - reports
+    depends_on:
+      - reports
+    
+  tests:
+    container_name: tests
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /fapp/node_modules
+      - .:/fapp
+    command: npm run test
+
+  swagger:
+    build:
+      context: ./services/swagger
+      dockerfile: Dockerfile
+    volumes:
+        - './services/swagger/swagger.json:/usr/share/nginx/html/swagger.json'
+    ports:
+      - 8084:8080
+    environment:
+      - URL=swagger.json
+    depends_on:
+      - reports
+
